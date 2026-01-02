@@ -1,0 +1,30 @@
+# --- Python Basics ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Virtual Environment ---
+venv/
+env/
+.env
+
+# --- Flask & Database ---
+# Modern Flask creates DBs in 'instance/', we must ignore this
+instance/
+*.db
+*.sqlite3
+
+# --- Uploaded Media ---
+# Ignore the folder where user files are saved
+uploads/
+
+# --- Secrets & Config ---
+.env
+.flaskenv
+
+# --- IDE & OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
