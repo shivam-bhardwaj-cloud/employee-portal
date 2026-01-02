@@ -5,6 +5,10 @@ This project is a simulation of a real-world **Enterprise Document Management Sy
 
 **The twist:** This is an **Evolutionary DevOps Project**. Instead of building the complex infrastructure immediately, I am building it in strict phases to demonstrate mastery over the entire Software Development Life Cycle (SDLC):
 
+---
+### ⚠️ This project is intentionally built in phases. Each phase is available as a separate Git branch to showcase real-world system evolution.
+---
+
 1.  **Local Development (Current Phase)**
 2.  Containerization (Docker)
 3.  Orchestration (Kubernetes)
