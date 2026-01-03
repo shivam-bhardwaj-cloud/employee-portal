@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  employee-portal:
+    # build: 
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: shivpandat/employee-portal-image
+    container_name: employee-portal-container
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Data/instance:/app/instance
+      - ./Data/uploads:/app/uploads
+    restart: unless-stopped

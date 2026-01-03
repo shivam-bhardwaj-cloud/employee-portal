@@ -31,7 +31,7 @@ In this initial phase, the focus was on writing clean application logic using Py
 
 ```mermaid
 graph TD
-    %% Define Styles
+    %% Define Stylesaf67092 phase-1: local flask app with sqlite and f
     classDef user fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b;
     classDef app fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32;
     classDef storage fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#ef6c00;
