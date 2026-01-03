@@ -9,122 +9,83 @@ This project is a simulation of a real-world **Enterprise Document Management Sy
 ### ⚠️ This project is intentionally built in phases. Each phase is available as a separate Git branch to showcase real-world system evolution.
 ---
 
-1.  **Local Development (Current Phase)**
-2.  Containerization (Docker)
+1.  Local Development
+2.  **Containerization (Docker) (Current Phase)**
 3.  Orchestration (Kubernetes)
 4.  Cloud Integration (AWS S3 & RDS)
 5.  Automation (CI/CD Pipelines)
 
 ---
+## 🐳 Phase 2: Containerization with Docker & Docker Compose
 
-## 🏗️ Phase 1: Local Development Architecture
-In this initial phase, the focus was on writing clean application logic using Python (Flask) without worrying about complex infrastructure.
+In Phase 2, the application was containerized to ensure **environment** **consistency**, reproducible deployments, and to prepare the system for cloud-native execution.
 
-### Tech Stack (Phase 1)
-* **Language:** Python 3.10
-* **Framework:** Flask (Lightweight Web Framework)
-* **Database:** SQLite (Local file-based database `employees.db`)
-* **File Storage:** Local Server Storage (`uploads/` directory)
-* **Frontend:** HTML5 + CSS
+The goal of this phase was not scaling, but validating that the application behaves identically inside a container while handling data persistence correctly.
 
-### Architecture Diagram
+### What Changed in Phase 2
 
-```mermaid
-graph TD
-    %% Define Stylesaf67092 phase-1: local flask app with sqlite and f
-    classDef user fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b;
-    classDef app fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32;
-    classDef storage fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#ef6c00;
+- Flask application containerized using a multi-stage Dockerfile
+- Build and runtime layers separated to reduce final image size
+- Docker Compose introduced for local orchestration
+- Persistent storage implemented using bind-mounted volumes
+- Application exposed using explicit port mapping (5000:5000)
+- Local filesystem replaced by container-mounted paths
 
-    subgraph "🌐 Client Layer"
-        User([fa:fa-user Employee Browser]):::user
-    end
+### Tech Stack (Phase 2)
+- `Docker` (multi-stage builds)
+- `Docker Compose`
+- `python:3.12-slim` (builder stage)
+- `python:3.12-alpine` (runtime stage)
+### Architecture Summary (Phase 2)
 
-    subgraph "⚙️ Phase 1: Local Infrastructure"
-        direction TB
-        App[fa:fa-cogs Flask Application]:::app
-        
-        subgraph "Persistence Layer"
-            DB[(fa:fa-database SQLite DB)]:::storage
-            FS[fa:fa-folder-open uploads/ Directory]:::storage
-        end
-    end
+- Flask application runs inside a Docker container
+- SQLite database is mounted from the host into the container
+- Uploaded files are mounted from the host into the container
+- Containers remain ephemeral, data remains persistent
+- Container restarts do not result in data loss
+- This phase highlights the difference between application lifecycle and data lifecycle.
 
-    %% Connections
-    User ==>|POST /upload| App
-    App -->|Commit Data| DB
-    App -->|Write File| FS
-```
-## Setup & Installation
-### Prerequisites
-
-- Linux (Ubuntu/Debian)
-- Python 3.10+
-- Pip
-
-### Step 1: Environment Setup
-I strictly follow best practices by isolating dependencies in a Virtual Environment.
-
-```
-Bash
-
-# Update system and install python3-venv 
-sudo apt update
-sudo apt install python3-venv
-
-# Create virtual environment (Do NOT use sudo here)
-python3 -m venv venv
-
-# Activate the environment
-source venv/bin/activate
+### Run Using Docker Compose
+``` bash 
+docker compose up -d
 ```
 
-### Step 2: Install Dependencies
-``` Bash
-pip install -r requirements.txt
+### The application will be available at:
 
+``` bash 
+http://localhost:5000
 ```
 
-### Step 3: Run the Application
-``` Bash
-python app.py
-```
-- The app will start running at `http://localhost:5000`
+## Phase 2 Observations & Learnings
+
+#### 1. Containers cannot be treated as permanent storage
+- **`Meaning:`** Containers are disposable. They can be stopped, removed, or recreated at any time without warning.
+- **`Lesson:`** Application code runs inside containers, but data must live outside containers using volumes or external storage.
+
+#### 2. Bind-mounted volumes lock directories while containers are running
+- **`Meaning:`** When Docker bind-mounts a host directory into a container, the Linux kernel marks that directory as `in use`.
+- **`Lesson:`** While a container is running, mounted directories should not be modified or deleted from the host.
+
+#### 3. Attempting to delete mounted paths results in `resource busy` errors
+- **`Meaning:`** The Linux kernel prevents deletion of active mount points to avoid filesystem corruption.
+- **`Lesson:`** A resource busy error is a signal that volumes are correctly attached, not a failure.
+#### 4. Container filesystem ownership differs from host filesystem
+- **`Meaning:`** Files created inside containers are typically owned by root, even when mounted on the host.
+- **`Lesson:`** File ownership and permissions must be planned explicitly in production systems (**Docker**, **Kubernetes**).
+This behavior is expected during local development.
 
 
-## 🛠️ Challenges & Troubleshooting
 
-### The Issue: **Virtual Environment Failure** Error Message:
-
-`The virtual environment was not created successfully because ensurepip is not available.
-`
-
-**Context:**
-- On Ubuntu/Debian systems, the venv module is often pre-installed but stripped of the ensurepip tool to save space. When I tried to run python3 -m venv venv, it failed. I initially tried forcing it with `sudo`, which caused `permission errors` later.
-
-### Solution: Install the missing package:
----
-``` Bash
-sudo apt install python3-venv
-```
-
-Clean up: Removed the corrupted venv folder created by sudo.
-
-``` Bash
-sudo rm -rf venv
-```
-`Re-create correctly:` Created the new environment as a standard user `(without sudo)` to ensure I have full read/write permissions for installing packages.
-
-
-📂 Project Structure
-``` Plaintext
-
+📂 `Project Structure` (Phase 2)
+``` text
 employee-portal/
-├── app.py                # Main Application Logic (Routes & DB Models)
-├── requirements.txt      # Project Dependencies
+├── app.py
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
 ├── templates/
-│   └── index.html        # Frontend UI
-├── uploads/              # (Generated) Stores uploaded resumes locally
-└── instance
-    └── employees.db          # (Generated) SQLite Database file
+│   └── index.html
+├── Data/
+│   ├── instance/        # SQLite DB (bind-mounted from host)
+│   └── uploads/         # Uploaded files (bind-mounted from host)
 ```
