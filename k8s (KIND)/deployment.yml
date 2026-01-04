@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employee-portal-deployment
+  namespace: employee-portal-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: employee-portal
+  template:
+    metadata:
+      labels:
+        app: employee-portal
+    spec:
+      containers:
+      - name: employee-portal-container
+        image: shivpandat/employee-portal-image
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: uploads-storage
+          mountPath: /app/uploads
+        - name: db-storage
+          mountPath: /app/instance
+      volumes:
+      - name: uploads-storage
+        persistentVolumeClaim:
+          claimName: employee-portal-pvc
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: employee-portal-db-pvc
