@@ -11,116 +11,128 @@ This project is a simulation of a real-world **Enterprise Document Management Sy
 
 1.  Local Development
 2.  Containerization (Docker)
-3.  **Orchestration (Kubernetes) (Current Phase)**
-4.  Cloud Integration (AWS S3 & RDS)
+3.  Orchestration (Kubernetes)
+4.  **Cloud Integration (AWS S3 & RDS) (Current Phase)**
 5.  Automation (CI/CD Pipelines)
 
 ---
-## Phase 3: Kubernetes Deployment with Persistent Storage (KIND)
+## Phase 4: Cloud Integration using AWS S3 + AWS RDS
 
-In Phase 3, the containerized application was deployed to a Kubernetes cluster to move beyond single-node execution and understand real orchestration behavior.
+IIn Phase 4, the application moves from local storage and local databases to fully cloud-managed storage & database infrastructure. This transition enables true stateless application behavior, durable storage, and secure credential management.
 
-The goal of this phase was not **high availability** or **production scaling**, but to validate **pod lifecycle, replicas, and persistent storage behavior** inside Kubernetes.
+The goal of this phase is not only to `push things to the cloud` but to validate real production concerns such as:
 
-### What Changed in Phase 3
+- Data durability
+- Horizontal scalability
+- Stateless containers
+- Secure authentication without static keys
+- Eliminating local single-node bottlenecks
 
-- Application deployed on Kubernetes using Deployment
-- Multiple replicas managed by Kubernetes
-- Dedicated Namespace created for isolation
-- Application exposed internally using Service
-- Persistent storage implemented using PersistentVolumeClaims (PVCs)
----
-- Separate volumes created for:
-- Uploaded files
-- SQLite database
----
-- Data persistence validated across pod deletion and recreation
-- Local Kubernetes cluster created using **KIND**
+### What Changed in Phase 4
 
-### Tech Stack (Phase 3)
-- `Kubernetes`
-- `KIND` (Kubernetes IN Docker)
-- `kubectl`
-- `PersistentVolumeClaim`
-- `local-path-storage` (default KIND storage class)
-- Docker image from Phase 2
+- File uploads now go to **Amazon S3** instead of local disk.
+- Employee metadata stored in **Amazon RDS** (PostgreSQL) - instead of SQLite.
+- Python backend updated to use **SQLAlchemy ORM** with a - PostgreSQL driver.
+- **IAM Instance Role** replaces AWS Access Keys for secure - authentication.
+- Flask development server replaced with **Gunicorn** for - production readiness.
+- Dockerfile switched from Alpine → Debian Slim for - psycopg2 support.
+- All local volumes related to storage were removed.
+- Application runs as a **Stateless Cloud-Ready Service**.
 
-### Architecture Summary (Phase 3)
-- Flask application runs inside Kubernetes pods
-- Pods are managed by a Deployment with **3 replicas**
-- A Service routes traffic to pods
-- Uploaded files are stored in `/app/uploads` via PVC
-- SQLite database is stored in `/app/instance` via PVC
-- Pods remain **ephemeral**
-- Data remains **persistent**
-- Pod restarts and deletions do not cause data loss
-- This phase highlights the separation between **pod lifecycle** and **data- lifecycle**
+### Tech Stack (Phase 4)
 
-### Run on Kubernetes (KIND)
-``` bash 
-kubectl apply -f namespace.yml
-kubectl apply -f pvc.yml
-kubectl apply -f db-pvc.yml
-kubectl apply -f deployment.yml
-kubectl apply -f service.yml
+- `Flask` (Backend Framework)
+- `Gunicorn` (WSGI Production Server)
+- `SQLAlchemy` + `psycopg2-binary` (ORM + PostgreSQL Driver)
+- `Amazon S3` (Object Storage)
+- `Amazon RDS (PostgreSQL)` (Managed Relational DB)
+- `AWS IAM` (Instance Roles for Credential Management)
+- `Docker` (Container Runtime)
+- `TailwindCSS` (Frontend Styling)
+- `boto3` (AWS SDK)
+
+### Architecture Summary (Phase 4)
+
+- Web traffic hits a Flask application running under **Gunicorn**.
+- Application stores files in an **S3 bucket** instead of local folders.
+- Application stores metadata in **AWS RDS PostgreSQL**.
+- No persistent volumes are mounted on the container.
+- Application becomes **stateless** and fault-tolerant.
+- IAM Role provides **temporary secure credentials** to S3 (no keys in code).
+
+This phase highlights the separation between:
+
+- **Application compute layer**
+- **Object storage layer**
+- **Relational data layer**
+
+### Run on Cloud (EC2 Example)
+
+- Attach IAM Role with S3 permissions to instance
+- Install Docker + Docker Compose
+- Create `.env` file with RDS details
+- Run the application
+
+Run:
+``` bash
+docker compose up --build -d
 ```
 
-### Access the Application
+---
 
-``` bash 
-kubectl port-forward svc/employee-portal-svc -n employee-portal-ns 5000:80
-
+### Application Access at:
+``` bash
+http://<public-ip>:5000
 ```
-### Application available at:
+
 ``` bash
 http://localhost:5000
 ```
 
-## Phase 3 Observations & Learnings
+## Phase 4 Observations & Learnings
 
-#### 1.Pods are ephemeral, volumes are not
-- **`Meaning:`** Kubernetes freely destroys and recreates pods.
-- **`Lesson:`** Any important data must live inside Persistent Volumes, not inside pods.
+#### 1.Object Storage Replaces PVCs for File Uploads
+- **`Meaning:`** Local disk storage does not scale across replicas.
+- **`Lesson:`** S3 provides durability, scalability, and eliminates disk affinity.
 
-#### 2.PVCs persist data across pod restarts
-- **`Meaning:`** Deleting a pod does not delete its attached volume.
-- **`Lesson:`** PersistentVolumeClaims decouple storage from pod lifecycle.
+#### 2.RDS Replaces SQLite for Multi-User & Durable Data
+- **`Meaning:`** SQLite cannot handle concurrent cloud workloads.
+- **`Lesson:`** Cloud DB engines solve scaling, backups, and failover.
 
-#### 3. Multiple replicas share the same volume (ReadWriteOnce)
-- **`Meaning:`** SQLite works here only because KIND schedules pods carefully.
-- **`Lesson:`** SQLite is acceptable for learning, not for real multi-replica production systems.
+#### 3. IAM Roles Replace Static Credentials
+- **`Meaning:`** Hardcoded AWS keys are insecure and unmanageable.
+- **`Lesson:`** IAM-based auth enables automatic credential rotation.
 
-#### 4. Kubernetes does not expose containers directly
-- **`Meaning:`** You cannot use `docker exec` to inspect application containers.
-- **`Lesson:`** Always interact with workloads using kubectl exec.
+#### 4. Stateless Containers Improve Resilience
+- **`Meaning:`** No local volumes means no data loss on container eviction.
+- **`Lesson:`** Containers become disposable and safe to auto-scale.
 
-#### 5. Services expose pods, not containers
-- **`Meaning:`** Port-forwarding targets Services or Pods, not Docker containers.
-- **`Lesson:`** Networking is abstracted at the Kubernetes layer.
+#### 5. Flask Dev Server Is Not Production-Ready
+- **`Meaning:`** Debug server lacks concurrency and security.
+- **`Lesson:`** Debug server lacks concurrency and security.
 
 ## Problems Faced & Troubleshooting
 
-**Issue 1:** `/app` directory not visible using Docker commands.
-- **`Cause:`** Kubernetes pods run inside node containers managed by KIND.
-- **`Fix:`** 
-``` bash
-kubectl exec -it <pod-name> -n <ns-name> -- sh
-```
----
-**Issue 2:** `permission denied` **when binding to port 80**
-- **`Cause:`** Ports below 1024 require root privileges.
-- **`Fix:`** Use high ports like `5000` during port-forwarding.
----
+**Issue 1:** `psycopg2` failing to install on Alpine
+- **`Cause:`** Requires system libraries not available on Alpine by default
+- **`Fix:`** witched to `python:3.12-slim` and installed `libpq-dev` & `gcc`
 
-**Issue 3:** Data disappeared after pod deletion (initially)
-- **`Cause:`** Volumes were not mounted correctly in Deployment.
-- **`Fix:`** Explicitly mount PVCs to `/app/uploads` and `/app/instance`.
+---
+**Issue 2:** Credential handling confusion
+- **`Cause:`** AWS SDK defaults require credentials to exist.
+- **`Fix:`** UUsed IAM Role attached to EC2 for secure automatic auth.
 
 ---
 
-**Issue 4:** SQLite database location confusion
-- **`Cause:`** Flask auto-creates databases inside the instance/ directory.
-- **`Fix:`** Persist /app/instance using a dedicated PVC.
+**Issue 3:** SQLite locking under multi-request traffic
+- **`Cause:`** SQLite uses file-level locking
+- **`Fix:`** EMigrated DB layer to AWS RDS PostgreSQL
+
+---
+
+**Issue 4:** Local uploads not accessible after restart.
+- **`Cause:`** No shared persistent filesystem
+- **`Fix:`** Migrated to S3 object storage
 
 ---
 
@@ -132,14 +144,56 @@ employee-portal/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── templates/
-│   └── index.html
+├── .env                # Local config (ignored in Git)
+├── .dockerignore
+├── .gitignore
 ├── k8s (KIND)/
-│   ├── cluster.yml
-│   ├── namespace.yml
-│   ├── deployment.yml
-│   ├── service.yml
-│   ├── pvc.yml
-│   └── db-pvc.yml
+└── templates/
+    └── index.html
 
+```
+---
+
+### Environment Variables
+.env file should contain:
+
+``` bash
+SECRET_KEY=change_me
+POSTGRES_HOST=<rds-endpoint>
+POSTGRES_PORT=<postgres-port>
+POSTGRES_USER=<postgres-username>
+POSTGRES_PASSWORD=<postgres-password>
+POSTGRES_DB=employee_portal
+
+AWS_REGION=us-east-1
+S3_BUCKET=<your-unique-bucket-name>
+```
+
+**Note:** AWS Access Keys are not required when running on EC2 with IAM Roles.
+
+### AWS S3 Upload (Python)
+``` python
+s3_client.upload_fileobj(
+    file,
+    app.config['S3_BUCKET'],
+    filename,
+    ExtraArgs={'ContentType': file.content_type}
+)
+file_url = f"https://{app.config['S3_BUCKET']}.s3.{app.config['AWS_REGION']}.amazonaws.com/{filename}"
+```
+### RDS Metadata Insert
+``` sql
+new_emp = Employee(name=name, email=email, role=role, resume_url=file_url)
+db.session.add(new_emp)
+db.session.commit()
+```
+
+---
+
+## Troubleshooting / Verification
+
+To verify direct connectivity to AWS RDS using `psql`, run:
+
+``` bash 
+PGPASSWORD=<postgres-password> psql -h <rds-endpoint> -U <postgres-username> -d employee_portal
 ```

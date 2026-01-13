@@ -1,30 +1,19 @@
-# -------- builder stage --------
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt --target /deps
+# Install dependencies (Flask, Boto3, Gunicorn)
+# --no-cache-dir tells pip: "Don't save the downloaded files", saving space.
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# -------- runtime stage --------
-FROM python:3.12-alpine
+# Ensure logs appear immediately
+ENV PYTHONUNBUFFERED=1
 
-WORKDIR /app
-
-# copy application
-COPY --from=builder /app /app
-
-# copy dependencies
-COPY --from=builder /deps /deps
-
-# make deps visible to python
-ENV PYTHONPATH=/deps
-
-# Expose the port
 EXPOSE 5000
 
-# IMPORTANT: exact python binary path
-CMD ["python", "app.py"]
+# Start the production server
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]

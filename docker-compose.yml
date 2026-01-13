@@ -2,14 +2,35 @@ version: "3.9"
 
 services:
   employee-portal:
-    # build: 
-    #   context: .
-    #   dockerfile: Dockerfile
-    image: shivpandat/employee-portal-image
+      
+    image: shivpandat/employee-portal-image:latest
     container_name: employee-portal-container
     ports:
       - "5000:5000"
-    volumes:
-      - ./Data/instance:/app/instance
-      - ./Data/uploads:/app/uploads
+
+    # --- PHASE 4 CHANGE: VOLUMES REMOVED ---
+    # Why?
+
+    # 1. Resumes now go to AWS S3, so we don't need a local uploads folder.
+    # 2. Data now goes to AWS RDS, so we don't need a local SQLite file.
+    # This makes the container "Stateless" — if it crashes, we lose nothing.
     restart: unless-stopped
+    
+    # --- PHASE 4 CHANGE: ENVIRONMENT VARIABLES ---
+    
+    environment:
+      # AWS Configuration
+      # (Note: Access Keys are removed because we use EC2 IAM Roles for security)
+      AWS_REGION: "${AWS_REGION}"
+      S3_BUCKET: "${S3_BUCKET}"
+      
+      # Database Configuration (Postgres/RDS)
+      # These variables tell app.py how to find the remote database.
+      POSTGRES_HOST: "${POSTGRES_HOST}"
+      POSTGRES_PORT: "${POSTGRES_PORT}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      
+      # Application Security
+      SECRET_KEY: "${SECRET_KEY}"

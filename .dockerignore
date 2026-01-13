@@ -1,9 +1,43 @@
-# Git
+# --- Security (CRITICAL) ---
+# Prevent secrets from being baked into the Docker Image
+.env
+.flaskenv
+
+# --- Build Speed & Size ---
+# Don't copy local virtual env (Docker installs its own)
+
+.env
+env
+venv/
+env/
+
+# Don't copy compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Git Metadata ---
 .git
 .gitignore
 .gitattributes
-.dockerignore
 
-README.MD
+# --- Docker Metadata ---
+# We don't need the build instructions inside the container
+.dockerignore
 Dockerfile
 docker-compose.yml
+README.MD
+
+# --- Local Data & Media ---
+# Don't copy local test data/uploads to the production image
+instance/
+uploads/
+Data/
+*.db
+*.sqlite3
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+.DS_Store
