@@ -9,28 +9,26 @@ services:
       - "5000:5000"
 
     # --- PHASE 4 CHANGE: VOLUMES REMOVED ---
-    # Why?
-
-    # 1. Resumes now go to AWS S3, so we don't need a local uploads folder.
-    # 2. Data now goes to AWS RDS, so we don't need a local SQLite file.
-    # This makes the container "Stateless" — if it crashes, we lose nothing.
+    # In Phase 3, we mounted './Data' for persistence.
+    # In Phase 4, the app is STATELESS.
+    # - Resumes -> AWS S3
+    # - Data -> AWS RDS
+    # If this container crashes, we lose nothing.
+    
     restart: unless-stopped
     
     # --- PHASE 4 CHANGE: ENVIRONMENT VARIABLES ---
-    
+    # We now inject config explicitly for Cloud Connectivity
     environment:
-      # AWS Configuration
-      # (Note: Access Keys are removed because we use EC2 IAM Roles for security)
+      # AWS Configuration (Read from .env file)
       AWS_REGION: "${AWS_REGION}"
       S3_BUCKET: "${S3_BUCKET}"
       
       # Database Configuration (Postgres/RDS)
-      # These variables tell app.py how to find the remote database.
       POSTGRES_HOST: "${POSTGRES_HOST}"
       POSTGRES_PORT: "${POSTGRES_PORT}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: "${POSTGRES_DB}"
       
-      # Application Security
       SECRET_KEY: "${SECRET_KEY}"
