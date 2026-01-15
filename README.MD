@@ -115,7 +115,7 @@ http://localhost:5000
 
 **Issue 1:** `psycopg2` failing to install on Alpine
 - **`Cause:`** Requires system libraries not available on Alpine by default
-- **`Fix:`** witched to `python:3.12-slim` and installed `libpq-dev` & `gcc`
+- **`Fix:`** Switched to `python:3.12-slim`
 
 ---
 **Issue 2:** Credential handling confusion
@@ -182,7 +182,7 @@ s3_client.upload_fileobj(
 file_url = f"https://{app.config['S3_BUCKET']}.s3.{app.config['AWS_REGION']}.amazonaws.com/{filename}"
 ```
 ### RDS Metadata Insert
-``` sql
+``` python
 new_emp = Employee(name=name, email=email, role=role, resume_url=file_url)
 db.session.add(new_emp)
 db.session.commit()
