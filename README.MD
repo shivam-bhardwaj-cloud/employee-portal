@@ -66,6 +66,8 @@ This phase highlights the separation between:
 - **Object storage layer**
 - **Relational data layer**
 
+![Final Architecture](architecture.jpg)
+
 ### Run on Cloud (EC2 Example)
 
 - Attach IAM Role with S3 permissions to instance
